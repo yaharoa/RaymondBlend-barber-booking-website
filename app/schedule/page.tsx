@@ -75,6 +75,9 @@ export default function SchedulePage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
   async function loadSchedule(forDate: string, forPin: string) {
     setBusy(true);
     setErr("");
@@ -127,6 +130,32 @@ export default function SchedulePage() {
       localStorage.setItem(PIN_STORAGE_KEY, pinInput);
       setPin(pinInput);
     }
+  }
+
+  async function cancelBooking(id: string) {
+    setCancellingId(id);
+    setErr("");
+
+    const { error } = await supabase.rpc("cancel_booking", {
+      p_booking_id: id,
+      p_pin: pin,
+    });
+
+    setCancellingId(null);
+    setConfirmingId(null);
+
+    if (error) {
+      if (error.message?.includes("invalid_pin")) {
+        setErr("That PIN doesn't look right.");
+        setUnlocked(false);
+        localStorage.removeItem(PIN_STORAGE_KEY);
+      } else {
+        setErr("Couldn't cancel that booking. Try again.");
+      }
+      return;
+    }
+
+    setBookings((prev) => (prev ? prev.filter((b) => b.id !== id) : prev));
   }
 
   function handleForget() {
@@ -224,6 +253,38 @@ export default function SchedulePage() {
                 <a href={`tel:${b.phone}`}>{b.phone}</a>
                 <a href={`mailto:${b.email}`}>{b.email}</a>
               </div>
+
+              <div className="booking-actions">
+                {confirmingId === b.id ? (
+                  <div className="confirm-row">
+                    <span>Cancel this booking?</span>
+                    <button
+                      type="button"
+                      className="confirm-yes"
+                      disabled={cancellingId === b.id}
+                      onClick={() => cancelBooking(b.id)}
+                    >
+                      {cancellingId === b.id ? "Cancelling…" : "Yes, cancel"}
+                    </button>
+                    <button
+                      type="button"
+                      className="confirm-no"
+                      disabled={cancellingId === b.id}
+                      onClick={() => setConfirmingId(null)}
+                    >
+                      Keep it
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="cancel-btn"
+                    onClick={() => setConfirmingId(b.id)}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
             </li>
           ))}
         </ul>
@@ -307,10 +368,12 @@ export default function SchedulePage() {
 
         .booking {
           display: flex;
+          align-items: flex-start;
           gap: 16px;
           border: 1px solid #e8e4db;
           border-radius: 10px;
           padding: 14px 16px;
+          flex-wrap: wrap;
         }
 
         .booking-time {
@@ -322,10 +385,60 @@ export default function SchedulePage() {
           display: flex;
           flex-direction: column;
           gap: 2px;
+          flex: 1;
+          min-width: 160px;
         }
 
         .booking-details a {
           color: #111;
+        }
+
+        .booking-actions {
+          margin-left: auto;
+        }
+
+        .cancel-btn {
+          background: none;
+          border: 1px solid #d8433c;
+          color: #d8433c;
+          border-radius: 8px;
+          padding: 6px 12px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .confirm-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+        }
+
+        .confirm-yes {
+          background: #d8433c;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          padding: 6px 12px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .confirm-no {
+          background: none;
+          border: 1px solid #ddd9d0;
+          border-radius: 8px;
+          padding: 6px 12px;
+          font-size: 13px;
+          cursor: pointer;
+        }
+
+        .confirm-yes:disabled,
+        .confirm-no:disabled {
+          opacity: 0.6;
+          cursor: default;
         }
 
         .forget-link {
