@@ -4,7 +4,7 @@ import { FormEvent, Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-const reasons = ["schedule changes", "personal emergencies", "booked the wrong date."];
+const reasons = ["Schedule changes", "Personal emergencies", "Booked the wrong date"];
 
 function CancellationContent() {
   const params = useSearchParams();
