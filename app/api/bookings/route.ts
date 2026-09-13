@@ -134,7 +134,52 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (process.env.MON_MAILS_RESEND_API_KEY && process.env.BOOKING_FROM_EMAIL) {
+    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+
+  const t = new Date(`1970-01-01T${time}`).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  await transporter.sendMail({
+    from: process.env.GMAIL_USER,
+    to: data.email,
+    subject: "Your barber appointment is confirmed",
+
+    text: `Hi ${data.customer_name},
+
+Your haircut is confirmed.
+
+Date: ${data.booking_date}
+Time: ${t}
+Service: Haircut · 30 min
+
+Thank you for booking with us!`,
+
+    html: `
+      <h1>Appointment confirmed</h1>
+
+      <p>Hi ${esc(data.customer_name)},</p>
+
+      <p>Your haircut is confirmed.</p>
+
+      <p>
+        <b>Date:</b> ${data.booking_date}<br>
+        <b>Time:</b> ${t}<br>
+        <b>Service:</b> Haircut · 30 min
+      </p>
+
+      <p>Thank you for booking with us!</p>
+    `,
+  });
+}
       const t = new Date(`1970-01-01T${time}`).toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
