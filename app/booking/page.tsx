@@ -1,2 +1,2 @@
 import Link from "next/link";import Booking from "../../components/Booking";
-export default function Page(){return <main><nav className="nav darknav"><Link href="/"><b>YOUR BARBER</b></Link><Link href="/">← Home</Link></nav><section className="shell"><small>APPOINTMENTS</small><h1>Book your next cut.</h1><p>Choose a date and a 30-minute slot between 9:00 AM and 5:00 PM.</p><Booking/></section></main>}
+export default function Page(){return <main><nav className="nav darknav"><Link href="/"><b>RAYMOND BLEND</b></Link><Link href="/">← Home</Link></nav><section className="shell"><small>APPOINTMENTS</small><h1>Book your next cut.</h1><p>Choose a date and a 30-minute slot between 9:00 AM and 5:00 PM.</p><Booking/></section></main>}
