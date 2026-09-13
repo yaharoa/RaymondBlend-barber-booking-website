@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { db } from "../../../lib/supabase";
 import { slots, today, minDate, maxDate } from "../../../lib/slots";
 
