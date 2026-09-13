@@ -48,7 +48,7 @@ export function addDays(date: string, days: number) {
 }
 
 // Same-day booking is NOT allowed.
-export function minDate() {
+export const minDate() {
   return addDays(today(), 1);
 }
 
