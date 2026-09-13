@@ -134,13 +134,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (process.env.RESEND_API_KEY && process.env.BOOKING_FROM_EMAIL) {
+    if (process.env.MON_MAILS_RESEND_API_KEY && process.env.BOOKING_FROM_EMAIL) {
       const t = new Date(`1970-01-01T${time}`).toLocaleTimeString("en-US", {
         hour: "numeric",
         minute: "2-digit",
       });
 
-      await new Resend(process.env.RESEND_API_KEY).emails.send({
+      await new Resend(process.env.MON_MAILS_RESEND_API_KEY).emails.send({
         from: process.env.BOOKING_FROM_EMAIL,
         to: [data.email],
         subject: "Your barber appointment is confirmed",
