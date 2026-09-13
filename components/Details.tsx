@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const tl = (t: string) => {
@@ -9,6 +9,8 @@ const tl = (t: string) => {
     h >= 12 ? "PM" : "AM"
   }`;
 };
+
+const RESEND_COOLDOWN = 30;
 
 export default function Details({
   date,
@@ -30,8 +32,18 @@ export default function Details({
   const [codeSent, setCodeSent] = useState(false);
   const [verified, setVerified] = useState(false);
 
+  const [cooldown, setCooldown] = useState(0);
+  const [justResent, setJustResent] = useState(false);
+
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Tick the resend cooldown down once a second.
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   async function sendCode() {
     setBusy(true);
@@ -54,6 +66,7 @@ export default function Details({
       if (!q.ok) throw Error(j.error);
 
       setCodeSent(true);
+      setCooldown(RESEND_COOLDOWN);
     } catch (e) {
       setErr(
         e instanceof Error ? e.message : "Could not send verification code."
@@ -61,6 +74,13 @@ export default function Details({
     } finally {
       setBusy(false);
     }
+  }
+
+  async function resendCode() {
+    setCode("");
+    setJustResent(false);
+    await sendCode();
+    setJustResent(true);
   }
 
   async function verifyCode() {
@@ -174,12 +194,20 @@ export default function Details({
               value={f[k]}
               placeholder={ph}
               disabled={verified}
-              onChange={(e) =>
+              onChange={(e) => {
                 setF({
                   ...f,
                   [k]: e.target.value,
-                })
-              }
+                });
+                // Editing the email after a code was sent invalidates
+                // that code — make the person send a fresh one.
+                if (k === "email" && codeSent) {
+                  setCodeSent(false);
+                  setCode("");
+                  setCooldown(0);
+                  setErr("");
+                }
+              }}
             />
           </label>
         ))}
@@ -198,19 +226,40 @@ export default function Details({
             </button>
           ) : (
             <>
-              <label>
-                Verification code
-                <input
-                  required
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder="Enter 6-digit code"
-                  value={code}
-                  onChange={(e) =>
-                    setCode(e.target.value.replace(/\D/g, ""))
-                  }
-                />
-              </label>
+              <div className="fields">
+                <label>
+                  Verification code
+                  <input
+                    required
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="Enter 6-digit code"
+                    value={code}
+                    onChange={(e) =>
+                      setCode(e.target.value.replace(/\D/g, ""))
+                    }
+                  />
+                </label>
+              </div>
+
+              <div className="resend-row">
+                <span className="resend-hint">
+                  {justResent && cooldown > 0
+                    ? "New code sent."
+                    : "Didn't get it, or used the wrong email?"}
+                </span>
+
+                <button
+                  type="button"
+                  className="resend-btn"
+                  disabled={busy || cooldown > 0}
+                  onClick={resendCode}
+                >
+                  {cooldown > 0
+                    ? `Resend code in ${cooldown}s`
+                    : "Resend code"}
+                </button>
+              </div>
 
               <button
                 type="button"
@@ -242,6 +291,40 @@ export default function Details({
       )}
 
       {err && <div className="error">{err}</div>}
+
+      <style jsx>{`
+        .resend-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin: -10px 0 16px;
+        }
+
+        .resend-hint {
+          font-size: 13px;
+          color: #8a8a86;
+        }
+
+        .resend-btn {
+          background: none;
+          border: none;
+          padding: 0;
+          font-size: 13px;
+          font-weight: 600;
+          color: #111;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .resend-btn:disabled {
+          color: #b5b3ac;
+          text-decoration: none;
+          cursor: default;
+        }
+      `}</style>
     </form>
   );
 }
