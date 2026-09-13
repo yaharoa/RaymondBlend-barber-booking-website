@@ -298,7 +298,8 @@ export default function Details({
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-          margin: -10px 0 16px;
+          margin: 8px 0 16px;
+          flex-wrap: wrap;
         }
 
         .resend-hint {
