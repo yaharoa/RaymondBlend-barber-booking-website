@@ -188,7 +188,8 @@ Thank you for booking with us!`,
             <b>Time:</b> ${t}<br>
             <b>Service:</b> Haircut · 30 min
           </p>
-
+          <p>Please present this mail at the shop as a proof of your booking.</p>
+  
           <p>Thank you for booking with us!</p>
         `,
       });
