@@ -13,10 +13,14 @@ export async function GET(req: NextRequest) {
 
     if (month) {
       if (!/^\d{4}-\d{2}$/.test(month)) {
-        return NextResponse.json({ error: "Invalid month." }, { status: 400 });
+        return NextResponse.json(
+          { error: "Invalid month." },
+          { status: 400 }
+        );
       }
 
       const [year, monthNumber] = month.split("-").map(Number);
+
       const daysInMonth = new Date(
         Date.UTC(year, monthNumber, 0)
       ).getUTCDate();
@@ -96,7 +100,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { date, time, name, phone, email } = await req.json();
+    const {
+      date,
+      time,
+      name,
+      phone,
+      email,
+      verificationToken,
+    } = await req.json();
 
     if (!validDate(date) || !slots().includes(time)) {
       return NextResponse.json(
@@ -112,6 +123,70 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!verificationToken) {
+      return NextResponse.json(
+        {
+          error:
+            "Please verify your email before confirming your booking.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const customerEmail = email.trim().toLowerCase();
+
+    // Check that the email was actually verified.
+    const { data: verification, error: verificationError } = await db()
+      .from("email_verifications")
+      .select("id,email,verified_at,used_at,expires_at")
+      .eq("verification_token", verificationToken)
+      .eq("email", customerEmail)
+      .maybeSingle();
+
+    if (verificationError) {
+      throw verificationError;
+    }
+
+    if (!verification) {
+      return NextResponse.json(
+        {
+          error:
+            "Email verification was not found. Please verify your email again.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!verification.verified_at) {
+      return NextResponse.json(
+        {
+          error:
+            "Please verify your email before confirming your booking.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (verification.used_at) {
+      return NextResponse.json(
+        {
+          error:
+            "This email verification has already been used. Please verify your email again.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (new Date(verification.expires_at).getTime() < Date.now()) {
+      return NextResponse.json(
+        {
+          error:
+            "Your email verification has expired. Please verify your email again.",
+        },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await db()
       .from("bookings")
       .insert({
@@ -119,7 +194,7 @@ export async function POST(req: NextRequest) {
         start_time: time,
         customer_name: name.trim(),
         phone: phone.trim(),
-        email: email.trim().toLowerCase(),
+        email: customerEmail,
         service: "Haircut",
       })
       .select("id,booking_date,start_time,customer_name,email")
@@ -146,7 +221,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Send confirmation email through Gmail
+    // Mark the verification as used so it cannot be reused.
+    const { error: usedError } = await db()
+      .from("email_verifications")
+      .update({
+        used_at: new Date().toISOString(),
+      })
+      .eq("id", verification.id);
+
+    if (usedError) {
+      console.error("Could not mark verification as used:", usedError);
+    }
+
+    // Send confirmation email through Gmail.
     if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
       const transporter = nodemailer.createTransport({
         service: "gmail",
@@ -174,6 +261,8 @@ Date: ${data.booking_date}
 Time: ${t}
 Service: Haircut · 30 min
 
+Please present this email at the shop as proof of your booking.
+
 Thank you for booking with us!`,
 
         html: `
@@ -188,15 +277,20 @@ Thank you for booking with us!`,
             <b>Time:</b> ${t}<br>
             <b>Service:</b> Haircut · 30 min
           </p>
-          <p>Please present this mail at the shop as a proof of your booking.</p>
-  
+
+          <p>
+            Please present this email at the shop as proof of your booking.
+          </p>
+
           <p>Thank you for booking with us!</p>
         `,
       });
     }
 
     return NextResponse.json({ id: data.id });
-  } catch {
+  } catch (error) {
+    console.error("Booking error:", error);
+
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },
       { status: 500 }
@@ -211,4 +305,3 @@ function esc(s: string) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
-
