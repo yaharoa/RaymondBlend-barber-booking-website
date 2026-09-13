@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { db } from "../../../lib/supabase";
-import { slots, today, minDate, maxDate } from "../../../lib/slots";
+import { slots, minDate, maxDate } from "../../../lib/slots";
 
 const validDate = (d: string) =>
   /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= minDate() && d <= maxDate();
@@ -11,16 +11,16 @@ export async function GET(req: NextRequest) {
     const date = req.nextUrl.searchParams.get("date") || "";
     const month = req.nextUrl.searchParams.get("month") || "";
 
-    // Calendar view: return availability for every date in the requested month.
-    // Dates outside the booking window are returned as unavailable so they can
-    // remain visible but disabled on the calendar.
     if (month) {
       if (!/^\d{4}-\d{2}$/.test(month)) {
         return NextResponse.json({ error: "Invalid month." }, { status: 400 });
       }
 
       const [year, monthNumber] = month.split("-").map(Number);
-      const daysInMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+      const daysInMonth = new Date(
+        Date.UTC(year, monthNumber, 0)
+      ).getUTCDate();
+
       const firstDate = `${month}-01`;
       const lastDate = `${month}-${String(daysInMonth).padStart(2, "0")}`;
 
@@ -37,24 +37,29 @@ export async function GET(req: NextRequest) {
 
       for (const booking of data || []) {
         const bookingDate = String(booking.booking_date);
+
         if (!bookedByDate.has(bookingDate)) {
           bookedByDate.set(bookingDate, new Set());
         }
-        bookedByDate.get(bookingDate)!.add(
-          String(booking.start_time).slice(0, 8)
-        );
+
+        bookedByDate
+          .get(bookingDate)!
+          .add(String(booking.start_time).slice(0, 8));
       }
 
       const availability: Record<string, boolean> = {};
 
       for (let day = 1; day <= daysInMonth; day++) {
         const current = `${month}-${String(day).padStart(2, "0")}`;
+
         const inBookingWindow =
           current >= minDate() && current <= maxDate();
+
         const booked = bookedByDate.get(current) || new Set<string>();
 
         availability[current] =
-          inBookingWindow && allSlots.some((slot) => !booked.has(slot));
+          inBookingWindow &&
+          allSlots.some((slot) => !booked.has(slot));
       }
 
       return NextResponse.json({ availability });
@@ -93,17 +98,19 @@ export async function POST(req: NextRequest) {
   try {
     const { date, time, name, phone, email } = await req.json();
 
-    if (!validDate(date) || !slots().includes(time))
+    if (!validDate(date) || !slots().includes(time)) {
       return NextResponse.json(
         { error: "Please choose a valid date and time." },
         { status: 400 }
       );
+    }
 
-    if (!name?.trim() || !phone?.trim() || !email?.trim())
+    if (!name?.trim() || !phone?.trim() || !email?.trim()) {
       return NextResponse.json(
         { error: "Please complete all fields." },
         { status: 400 }
       );
+    }
 
     const { data, error } = await db()
       .from("bookings")
@@ -119,11 +126,16 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      if (error.code === "23505")
+      if (error.code === "23505") {
         return NextResponse.json(
-          { error: "Sorry, that slot was just booked. Please choose another time." },
+          {
+            error:
+              "Sorry, that slot was just booked. Please choose another time.",
+          },
           { status: 409 }
         );
+      }
+
       throw error;
     }
 
@@ -134,26 +146,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Send confirmation email through Gmail
     if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-  });
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD,
+        },
+      });
 
-  const t = new Date(`1970-01-01T${time}`).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+      const t = new Date(`1970-01-01T${time}`).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+      });
 
-  await transporter.sendMail({
-    from: process.env.GMAIL_USER,
-    to: data.email,
-    subject: "Your barber appointment is confirmed",
+      await transporter.sendMail({
+        from: process.env.GMAIL_USER,
+        to: data.email,
+        subject: "Your barber appointment is confirmed",
 
-    text: `Hi ${data.customer_name},
+        text: `Hi ${data.customer_name},
 
 Your haircut is confirmed.
 
@@ -163,37 +176,21 @@ Service: Haircut · 30 min
 
 Thank you for booking with us!`,
 
-    html: `
-      <h1>Appointment confirmed</h1>
+        html: `
+          <h1>Appointment confirmed</h1>
 
-      <p>Hi ${esc(data.customer_name)},</p>
+          <p>Hi ${esc(data.customer_name)},</p>
 
-      <p>Your haircut is confirmed.</p>
+          <p>Your haircut is confirmed.</p>
 
-      <p>
-        <b>Date:</b> ${data.booking_date}<br>
-        <b>Time:</b> ${t}<br>
-        <b>Service:</b> Haircut · 30 min
-      </p>
+          <p>
+            <b>Date:</b> ${data.booking_date}<br>
+            <b>Time:</b> ${t}<br>
+            <b>Service:</b> Haircut · 30 min
+          </p>
 
-      <p>Thank you for booking with us!</p>
-    `,
-  });
-}
-      const t = new Date(`1970-01-01T${time}`).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      });
-
-      await new Resend(process.env.MON_MAILS_RESEND_API_KEY).emails.send({
-        from: process.env.BOOKING_FROM_EMAIL,
-        to: [data.email],
-        subject: "Your barber appointment is confirmed",
-        html: `<h1>Appointment confirmed</h1><p>Hi ${esc(
-          data.customer_name
-        )}, your haircut is booked.</p><p><b>Date:</b> ${
-          data.booking_date
-        }<br><b>Time:</b> ${t}<br><b>Service:</b> Haircut · 30 min</p>`,
+          <p>Thank you for booking with us!</p>
+        `,
       });
     }
 
@@ -213,3 +210,4 @@ function esc(s: string) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
+```
