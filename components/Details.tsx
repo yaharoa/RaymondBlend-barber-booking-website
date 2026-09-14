@@ -304,7 +304,7 @@ export default function Details({
 
         .resend-hint {
           font-size: 13px;
-          color: #8a8a86;
+          color: var(--muted);
         }
 
         .resend-btn {
@@ -313,7 +313,7 @@ export default function Details({
           padding: 0;
           font-size: 13px;
           font-weight: 600;
-          color: #111;
+          color: var(--ink);
           text-decoration: underline;
           text-underline-offset: 2px;
           cursor: pointer;
@@ -321,7 +321,7 @@ export default function Details({
         }
 
         .resend-btn:disabled {
-          color: #b5b3ac;
+          color: #6f6b63;
           text-decoration: none;
           cursor: default;
         }

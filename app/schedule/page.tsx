@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
 // Uses the public anon key — safe to expose client-side. Access to the
@@ -168,39 +169,78 @@ export default function SchedulePage() {
 
   if (!unlocked) {
     return (
-      <div className="card gate">
-        <small className="eyebrow">Barber view</small>
-        <h1>Today&apos;s schedule.</h1>
-        <p className="sub">Enter your PIN to see the day&apos;s bookings.</p>
+      <main>
+        <nav className="nav darknav">
+          <Link href="/">
+            <b>RAYMOND BLEND</b>
+          </Link>
+          <Link href="/">← Home</Link>
+        </nav>
 
-        <label>
-          PIN
-          <input
-            inputMode="numeric"
-            type="password"
-            placeholder="Enter your PIN"
-            value={pinInput}
-            onChange={(e) => setPinInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
-          />
-        </label>
+        <section className="shell">
+          <div className="card gate">
+            <small className="eyebrow">Barber view</small>
+            <h1>Today&apos;s schedule.</h1>
+            <p className="sub">Enter your PIN to see the day&apos;s bookings.</p>
 
-        <button
-          type="button"
-          className="btn dark full"
-          disabled={busy || !pinInput}
-          onClick={handleUnlock}
-        >
-          {busy ? "Checking…" : "Unlock"}
-        </button>
+            <div className="fields">
+              <label>
+                PIN
+                <input
+                  inputMode="numeric"
+                  type="password"
+                  placeholder="Enter your PIN"
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
+                />
+              </label>
+            </div>
 
-        {err && <div className="error">{err}</div>}
-      </div>
+            <button
+              type="button"
+              className="btn dark full"
+              disabled={busy || !pinInput}
+              onClick={handleUnlock}
+            >
+              {busy ? "Checking…" : "Unlock"}
+            </button>
+
+            {err && <div className="error">{err}</div>}
+          </div>
+        </section>
+
+        <style jsx>{`
+          .eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 700;
+            color: var(--muted);
+          }
+
+          .sub {
+            color: var(--muted);
+          }
+
+          .gate h1 {
+            margin: 4px 0 8px;
+          }
+        `}</style>
+      </main>
     );
   }
 
   return (
-    <div className="card">
+    <main>
+      <nav className="nav darknav">
+        <Link href="/">
+          <b>RAYMOND BLEND</b>
+        </Link>
+        <Link href="/">← Home</Link>
+      </nav>
+
+      <section className="shell">
+      <div className="card">
       <div className="sched-header">
         <button
           type="button"
@@ -297,19 +337,15 @@ export default function SchedulePage() {
       </button>
 
       <style jsx>{`
-        .gate h1 {
-          margin: 4px 0 8px;
-        }
-
         .eyebrow {
           text-transform: uppercase;
           letter-spacing: 0.06em;
           font-weight: 700;
-          color: #9a9690;
+          color: var(--muted);
         }
 
         .sub {
-          color: #6b6b66;
+          color: var(--muted);
         }
 
         .sched-header {
@@ -332,7 +368,8 @@ export default function SchedulePage() {
 
         .nav-btn {
           background: none;
-          border: 1px solid #ddd9d0;
+          border: 1px solid var(--line);
+          color: var(--ink);
           border-radius: 8px;
           width: 40px;
           height: 40px;
@@ -345,6 +382,7 @@ export default function SchedulePage() {
           margin: 4px auto 20px;
           background: none;
           border: none;
+          color: var(--ink);
           font-size: 13px;
           font-weight: 600;
           text-decoration: underline;
@@ -352,7 +390,7 @@ export default function SchedulePage() {
         }
 
         .empty {
-          color: #6b6b66;
+          color: var(--muted);
           padding: 24px 0;
           text-align: center;
         }
@@ -370,7 +408,7 @@ export default function SchedulePage() {
           display: flex;
           align-items: flex-start;
           gap: 16px;
-          border: 1px solid #e8e4db;
+          border: 1px solid var(--line);
           border-radius: 10px;
           padding: 14px 16px;
           flex-wrap: wrap;
@@ -390,7 +428,9 @@ export default function SchedulePage() {
         }
 
         .booking-details a {
-          color: #111;
+          color: var(--ink);
+          text-decoration: underline;
+          text-underline-offset: 2px;
         }
 
         .booking-actions {
@@ -428,7 +468,8 @@ export default function SchedulePage() {
 
         .confirm-no {
           background: none;
-          border: 1px solid #ddd9d0;
+          border: 1px solid var(--line);
+          color: var(--ink);
           border-radius: 8px;
           padding: 6px 12px;
           font-size: 13px;
@@ -446,11 +487,13 @@ export default function SchedulePage() {
           margin: 24px auto 0;
           background: none;
           border: none;
-          color: #9a9690;
+          color: var(--muted);
           font-size: 13px;
           cursor: pointer;
         }
       `}</style>
-    </div>
+      </div>
+      </section>
+    </main>
   );
 }

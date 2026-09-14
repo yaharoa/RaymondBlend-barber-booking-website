@@ -248,6 +248,8 @@ export async function POST(req: NextRequest) {
         minute: "2-digit",
       });
 
+      const cancelUrl = `${req.nextUrl.origin}/cancellation?id=${data.id}`;
+
       await transporter.sendMail({
         from: process.env.GMAIL_USER,
         to: data.email,
@@ -262,6 +264,9 @@ Time: ${t}
 Service: Haircut · 30 min
 
 Please present this email at the shop as proof of your booking.
+
+Need to cancel? You can cancel up to 24 hours before your appointment here:
+${cancelUrl}
 
 Thank you for booking with us!`,
 
@@ -280,6 +285,11 @@ Thank you for booking with us!`,
 
           <p>
             Please present this email at the shop as proof of your booking.
+          </p>
+
+          <p>
+            Plans changed? <a href="${cancelUrl}">Click here if you want to cancel</a>
+            your appointment. Cancellations must be made at least 24 hours in advance.
           </p>
 
           <p>Thank you for booking with us!</p>

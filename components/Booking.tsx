@@ -34,17 +34,40 @@ export default function Booking() {
     return d;
   }, []);
 
-  // Show the complete current month, without spilling dates from adjacent months.
+  // Which month is currently being browsed. Defaults to the current month,
+  // but the person can page forward (or back, down to the current month)
+  // to preview later dates — the 30-day booking window is still enforced
+  // by the availability data itself, so far-future dates just show faded.
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+
+  const isCurrentMonth =
+    viewYear === today.getFullYear() && viewMonth === today.getMonth();
+
+  function shiftMonth(delta: number) {
+    let m = viewMonth + delta;
+    let y = viewYear;
+
+    if (m < 0) {
+      m = 11;
+      y -= 1;
+    } else if (m > 11) {
+      m = 0;
+      y += 1;
+    }
+
+    setViewYear(y);
+    setViewMonth(m);
+  }
+
+  // Show the complete viewed month, without spilling dates from adjacent months.
   const dates = useMemo(() => {
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
 
     return Array.from({ length: daysInMonth }, (_, i) => {
-      return new Date(year, month, i + 1);
+      return new Date(viewYear, viewMonth, i + 1);
     });
-  }, [today]);
+  }, [viewYear, viewMonth]);
 
   const firstWeekday = dates[0]?.getDay() ?? 0;
 
@@ -102,11 +125,32 @@ export default function Booking() {
         <b>01</b>
         <div>
           <h2>Choose a date</h2>
-          <p>{monthLabel} · Unavailable dates are faded.</p>
+          <p>Bookable up to 30 days out · unavailable dates are faded.</p>
         </div>
       </div>
 
       <div className="calendar">
+        <div className="calendarNav">
+          <button
+            type="button"
+            disabled={isCurrentMonth}
+            onClick={() => shiftMonth(-1)}
+            aria-label="Previous month"
+          >
+            ←
+          </button>
+
+          <strong>{monthLabel}</strong>
+
+          <button
+            type="button"
+            onClick={() => shiftMonth(1)}
+            aria-label="Next month"
+          >
+            →
+          </button>
+        </div>
+
         <div className="calendarWeekdays" aria-hidden="true">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
             <small key={day}>{day}</small>
