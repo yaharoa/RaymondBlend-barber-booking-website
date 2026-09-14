@@ -72,14 +72,6 @@ export default async function Page({
         )}
 
         <div className="confirmActions">
-          {id && (
-            <Link
-              className="btn cancelBtn"
-              href={`/cancellation?id=${encodeURIComponent(id)}`}
-            >
-              Cancel this appointment
-            </Link>
-          )}
           <Link className="btn dark" href="/">
             Back to home
           </Link>
