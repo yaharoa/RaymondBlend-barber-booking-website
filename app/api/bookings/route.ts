@@ -249,50 +249,51 @@ export async function POST(req: NextRequest) {
       });
 
       const cancelUrl = `${req.nextUrl.origin}/cancellation?id=${data.id}`;
+      const mapUrl = "https://maps.app.goo.gl/7MBXrdG427uRyhk18";
+      const address =
+        "Sinipit Road, Cabiao, Nueva Ecija (behind Edmar's Barbershop)";
 
       await transporter.sendMail({
         from: process.env.GMAIL_USER,
         to: data.email,
-        subject: "Your barber appointment is confirmed",
+        subject: `You're in the chair — ${data.booking_date} at ${t}`,
 
-        text: `Hi ${data.customer_name},
+        text: `Nice, ${data.customer_name} — you're locked in.
 
-Your haircut is confirmed.
+${data.booking_date}
+${t} · Haircut, 30 min
+Find us at: ${address}
+Get directions: ${mapUrl}
 
-Date: ${data.booking_date}
-Time: ${t}
-Service: Haircut · 30 min
+Come a couple minutes early if you can, and bring this email (or just your name) so we can check you in fast.
 
-Please present this email at the shop as proof of your booking.
-
-Need to cancel? You can cancel up to 24 hours before your appointment here:
+Need to change plans? You can cancel up to 24 hours before your appointment here:
 ${cancelUrl}
 
-Thank you for booking with us!`,
+Sharp by design. See you soon.
+— Raymond Blend`,
 
         html: `
-          <h1>Appointment confirmed</h1>
-
-          <p>Hi ${esc(data.customer_name)},</p>
-
-          <p>Your haircut is confirmed.</p>
+          <h1>Nice, ${esc(data.customer_name)} — you're locked in.</h1>
 
           <p>
-            <b>Date:</b> ${data.booking_date}<br>
-            <b>Time:</b> ${t}<br>
-            <b>Service:</b> Haircut · 30 min
+            <b>${data.booking_date}</b><br>
+            <b>${t}</b> · Haircut, 30 min<br>
+            <b>Find us at:</b> ${esc(address)}<br>
+            <a href="${mapUrl}">Get directions →</a>
           </p>
 
           <p>
-            Please present this email at the shop as proof of your booking.
+            Come a couple minutes early if you can, and bring this email
+            (or just your name) so we can check you in fast.
           </p>
 
           <p>
-            Plans changed? <a href="${cancelUrl}">Click here if you want to cancel</a>
+            Need to change plans? <a href="${cancelUrl}">Click here if you want to cancel</a>
             your appointment. Cancellations must be made at least 24 hours in advance.
           </p>
 
-          <p>Thank you for booking with us!</p>
+          <p>Sharp by design. See you soon.<br>— Raymond Blend</p>
         `,
       });
     }
