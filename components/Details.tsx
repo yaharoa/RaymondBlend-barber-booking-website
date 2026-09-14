@@ -226,7 +226,7 @@ export default function Details({
             </button>
           ) : (
             <>
-              <div className="fields">
+              <div className="fields codeField">
                 <label>
                   Verification code
                   <input
@@ -293,6 +293,10 @@ export default function Details({
       {err && <div className="error">{err}</div>}
 
       <style jsx>{`
+        .codeField {
+          margin-top: 30px;
+        }
+
         .resend-row {
           display: flex;
           align-items: center;
